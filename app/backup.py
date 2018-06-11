@@ -2,7 +2,7 @@ import os
 import time
 import json
 from datetime import datetime
-from subprocess import Popen, PIPE
+from subprocess import call
 
 from apiclient import discovery, http
 from httplib2 import Http
@@ -66,7 +66,8 @@ def upload_backup(directory, filename):
     """ Upload backup file to GDrive """
 
     metadata = {'name': filename.split('/').pop(), 'parents': [directory]}
-    file_body = http.MediaFileUpload(filename, 'application/octet-stream')
+    file_body = http.MediaFileUpload(filename, 'application/octet-stream',
+                                     chunksize=1024*1024*2, resumable=True)
     try:
         SERVICE.files().create(body=metadata, media_body=file_body).execute()
     except http.HttpError:
@@ -82,22 +83,14 @@ def make_backup(files, name, passphrase):
         os.chdir('/opt/backup')
 
     # preset commands for making backup
-    cmd = {
-        'tar': ['tar', '-c'] + files,
-        'xz_': ['xz', '-1'],
-        'gpg': ['gpg', '-c', '--batch', '--passphrase', passphrase],
-    }
-
-    # run sub processes
-    p1 = Popen(cmd['tar'], stdout=PIPE)
-    p2 = Popen(cmd['xz_'], stdin=p1.stdout, stdout=PIPE)
-    p3 = Popen(cmd['gpg'], stdin=p2.stdout, stdout=PIPE)
+    cmd = 'tar -c {files} | xz -1 | gpg -c --batch --passphrase {pph}'.format(
+        files=' '.join(files), pph=passphrase)
 
     name = '%s-%s.tar.xz.gpg' % (name, datetime.now().strftime('%Y%m%d-%H%M'))
     with open('/tmp/' + name, 'wb') as backup_file:
-        backup_file.write(p3.communicate()[0])
+        exit_error = call(cmd, shell=True, stdout=backup_file)
 
-    return backup_file.name
+    return backup_file.name if not exit_error else False
 
 
 if __name__ == '__main__':
