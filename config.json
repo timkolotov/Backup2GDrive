@@ -1,0 +1,6 @@
+{
+  "drive_path": "/Backups/Servers/{host}",
+  "passphrase": "examplePassPhrase",
+  "files": [
+  ]
+}

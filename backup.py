@@ -1,19 +1,12 @@
 import os
 import time
+import json
 from datetime import datetime
 from subprocess import Popen, PIPE
 
 from apiclient import discovery, http
 from httplib2 import Http
 from oauth2client import file, client, tools
-
-PATH = '/Backups/Servers/{host}'
-
-HOSTNAME = os.uname()[1]
-DRIVE_DIRS = PATH.format(host=HOSTNAME).split('/')[1:]
-PASSPHRASE = 'hello_world'
-FILES = [
-]
 
 
 def setup_api():
@@ -36,7 +29,7 @@ def create_dir(dir_name, parent_id=None):
         'parents': [parent_id if parent_id else 'root'],
         'mimeType': 'application/vnd.google-apps.folder'
     }
-    result = service.files().create(body=metadata).execute()
+    result = SERVICE.files().create(body=metadata).execute()
     dir_id = result.get('id', [])
     # start recursive creation if not find parent directory
     if len(DRIVE_DIRS) > 0:
@@ -56,7 +49,7 @@ def get_dir_id(parent=None):
     except IndexError:
         return parent
 
-    result = service.files().list(
+    result = SERVICE.files().list(
         q=query.format(id=parent if parent else 'root', name=current_directory)
     ).execute()
     time.sleep(.1)
@@ -75,19 +68,19 @@ def upload_backup(directory, filename):
     metadata = {'name': filename.split('/').pop(), 'parents': [directory]}
     file_body = http.MediaFileUpload(filename, 'application/octet-stream')
     try:
-        service.files().create(body=metadata, media_body=file_body).execute()
+        SERVICE.files().create(body=metadata, media_body=file_body).execute()
     except http.HttpError:
         return False
     else:
         return True
 
 
-def make_backup():
+def make_backup(files, passphrase):
     # preset commands for making backup
     cmd = {
-        'tar': ['tar', '-c'] + FILES,
+        'tar': ['tar', '-c'] + files,
         'xz_': ['xz', '-1'],
-        'gpg': ['gpg', '-c', '--batch', '--passphrase', PASSPHRASE],
+        'gpg': ['gpg', '-c', '--batch', '--passphrase', passphrase],
     }
 
     # run sub processes
@@ -95,7 +88,7 @@ def make_backup():
     p2 = Popen(cmd['xz_'], stdin=p1.stdout, stdout=PIPE)
     p3 = Popen(cmd['gpg'], stdin=p2.stdout, stdout=PIPE)
 
-    name = '%s-%s' % (HOSTNAME, datetime.now().strftime('%Y%m%d-%H%M'))
+    name = '%s-%s' % (os.uname()[1], datetime.now().strftime('%Y%m%d-%H%M'))
     with open('/tmp/%s.%s' % (name, 'tar.xz.gpg'), 'wb') as backup_file:
         backup_file.write(p3.communicate()[0])
 
@@ -103,8 +96,18 @@ def make_backup():
 
 
 if __name__ == '__main__':
-    path_to_backup_file = make_backup()
-    service = setup_api()
+    with open('./config.json', 'r') as config_file:
+        config = json.load(config_file)
 
-    directory1 = get_dir_id()
-    upload_backup(directory1, path_to_backup_file)
+    # must be global
+    DRIVE_DIRS = config['drive_path'].format(host=os.uname()[1]).split('/')[1:]
+    SERVICE = setup_api()
+
+    # create backup
+    path_to_backup_file = make_backup(config['files'], config['passphrase'])
+
+    # determine Google Drive directory id for uploading backup file
+    directory_id = get_dir_id()
+
+    # upload backup file
+    upload_result = upload_backup(directory_id, path_to_backup_file)
