@@ -76,6 +76,11 @@ def upload_backup(directory, filename):
 
 
 def make_backup(files, name, passphrase):
+    if os.environ.get('IN_DOCKER', False):
+        # make relative path to files and change dir
+        files = map(lambda x: '.' + x, files)
+        os.chdir('/opt/backup')
+
     # preset commands for making backup
     cmd = {
         'tar': ['tar', '-c'] + files,
