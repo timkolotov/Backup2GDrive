@@ -110,5 +110,7 @@ if __name__ == '__main__':
     # determine Google Drive directory id for uploading backup file
     directory_id = get_dir_id()
 
-    # upload backup file
+    # upload backup file and remove local file
     upload_result = upload_backup(directory_id, path_to_backup_file)
+    if upload_result:
+        os.unlink(path_to_backup_file)
