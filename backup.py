@@ -75,7 +75,7 @@ def upload_backup(directory, filename):
         return True
 
 
-def make_backup(files, passphrase):
+def make_backup(files, name, passphrase):
     # preset commands for making backup
     cmd = {
         'tar': ['tar', '-c'] + files,
@@ -88,8 +88,8 @@ def make_backup(files, passphrase):
     p2 = Popen(cmd['xz_'], stdin=p1.stdout, stdout=PIPE)
     p3 = Popen(cmd['gpg'], stdin=p2.stdout, stdout=PIPE)
 
-    name = '%s-%s' % (os.uname()[1], datetime.now().strftime('%Y%m%d-%H%M'))
-    with open('/tmp/%s.%s' % (name, 'tar.xz.gpg'), 'wb') as backup_file:
+    name = '%s-%s.tar.xz.gpg' % (name, datetime.now().strftime('%Y%m%d-%H%M'))
+    with open('/tmp/' + name, 'wb') as backup_file:
         backup_file.write(p3.communicate()[0])
 
     return backup_file.name
@@ -100,11 +100,12 @@ if __name__ == '__main__':
         config = json.load(config_file)
 
     # must be global
-    DRIVE_DIRS = config['drive_path'].format(host=os.uname()[1]).split('/')[1:]
+    DRIVE_DIRS = config['drive_path'].split('/')[1:]
     SERVICE = setup_api()
 
     # create backup
-    path_to_backup_file = make_backup(config['files'], config['passphrase'])
+    path_to_backup_file = make_backup(
+        config['files'], config['name'], config['passphrase'])
 
     # determine Google Drive directory id for uploading backup file
     directory_id = get_dir_id()
