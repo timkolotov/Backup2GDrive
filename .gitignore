@@ -52,5 +52,5 @@ fabric.properties
 
 # Editor-based Rest Client
 .idea/httpRequests
-app/client_id.json
-app/credentials.json
+/app/conf.d/credentials.json
+/app/conf.d/client_id.json

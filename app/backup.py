@@ -13,10 +13,10 @@ def setup_api():
     """ Setup the Drive v3 API """
 
     scopes = 'https://www.googleapis.com/auth/drive'
-    store = file.Storage('credentials.json')
+    store = file.Storage('./conf.d/credentials.json')
     creds = store.get()
     if not creds or creds.invalid:
-        flow = client.flow_from_clientsecrets('client_id.json', scopes)
+        flow = client.flow_from_clientsecrets('./conf.d/client_id.json', scopes)
         creds = tools.run_flow(flow, store)
     return discovery.build('drive', 'v3', http=creds.authorize(Http()))
 
@@ -90,11 +90,14 @@ def make_backup(files, name, passphrase):
     with open('/tmp/' + name, 'wb') as backup_file:
         exit_error = call(cmd, shell=True, stdout=backup_file)
 
+    if os.environ.get('IN_DOCKER', False):
+        os.chdir('/opt')
+
     return backup_file.name if not exit_error else False
 
 
 if __name__ == '__main__':
-    with open('./config.json', 'r') as config_file:
+    with open('./conf.d/config.json', 'r') as config_file:
         config = json.load(config_file)
 
     # must be global
