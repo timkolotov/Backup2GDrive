@@ -86,7 +86,7 @@ def make_backup(files, name, passphrase):
     cmd = 'tar -c {files} | xz -1 | gpg -c --batch --passphrase {pph}'.format(
         files=' '.join(files), pph=passphrase)
 
-    name = '%s-%s.tar.xz.gpg' % (name, datetime.now().strftime('%Y%m%d-%H%M'))
+    name = '%s-%s.xz.gpg' % (name, datetime.now().strftime('%Y%m%d-%H%M'))
     with open('/tmp/' + name, 'wb') as backup_file:
         exit_error = call(cmd, shell=True, stdout=backup_file)
 
