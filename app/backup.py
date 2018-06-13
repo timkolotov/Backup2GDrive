@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import pytz
 from datetime import datetime
 from subprocess import call
 
@@ -76,7 +77,7 @@ def upload_backup(directory, filename):
         return True
 
 
-def make_backup(files, name, passphrase):
+def make_backup(files, name, passphrase, tz):
     if os.environ.get('IN_DOCKER', False):
         # make relative path to files and change dir
         files = map(lambda x: '.' + x, files)
@@ -86,7 +87,7 @@ def make_backup(files, name, passphrase):
     cmd = 'tar -c {files} | xz -1 | gpg -c --batch --passphrase {pph}'.format(
         files=' '.join(files), pph=passphrase)
 
-    name = '%s-%s.xz.gpg' % (name, datetime.now().strftime('%Y%m%d-%H%M'))
+    name = '%s-%s.xz.gpg' % (name, datetime.now(tz).strftime('%Y%m%d-%H%M'))
     with open('/tmp/' + name, 'wb') as backup_file:
         exit_error = call(cmd, shell=True, stdout=backup_file)
 
@@ -104,9 +105,14 @@ if __name__ == '__main__':
     DRIVE_DIRS = config['drive_path'].split('/')[1:]
     SERVICE = setup_api()
 
+    try:
+        timezone = pytz.timezone(config['timezone'])
+    except KeyError:
+        timezone = None
+
     # create backup
     path_to_backup_file = make_backup(
-        config['files'], config['name'], config['passphrase'])
+        config['files'], config['name'], config['passphrase'], timezone)
 
     # determine Google Drive directory id for uploading backup file
     directory_id = get_dir_id()

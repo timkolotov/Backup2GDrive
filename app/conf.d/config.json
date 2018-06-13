@@ -2,6 +2,7 @@
   "name": "example",
   "drive_path": "/Backups/Servers",
   "passphrase": "examplePassPhrase",
+  "timezone": "UTC",
   "files": [
   ]
 }

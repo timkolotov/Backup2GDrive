@@ -1,7 +1,7 @@
 FROM python:2.7-alpine
 LABEL maintainer="Tim Kolotov <timophey.kolotov@gmail.com>"
 
-RUN pip install google-api-python-client oauth2client && \
+RUN pip install google-api-python-client oauth2client pytz && \
     apk update && apk add gnupg xz
 
 COPY app/backup.py /opt/backuper.py
