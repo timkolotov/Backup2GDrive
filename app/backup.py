@@ -98,6 +98,12 @@ def make_backup(files, name, passphrase, tz):
     return backup_file.name if not exit_error else False
 
 
+def exec_command(cmd):
+    cmd_result = call(cmd, shell=True)
+    if type(cmd_result) is int and cmd_result is not 0:
+        exit(cmd_result)
+
+
 if __name__ == '__main__':
     with open('./conf.d/config.json', 'r') as config_file:
         config = json.load(config_file)
@@ -111,6 +117,9 @@ if __name__ == '__main__':
     except KeyError:
         timezone = None
 
+    if 'run_before' in config:
+        exec_command(config['run_before'])
+
     # create backup
     path_to_backup_file = make_backup(
         config['files'], config['name'], config['passphrase'], timezone)
@@ -122,3 +131,6 @@ if __name__ == '__main__':
     upload_result = upload_backup(directory_id, path_to_backup_file)
     if upload_result:
         os.unlink(path_to_backup_file)
+
+    if 'run_after' in config:
+        exec_command(config['run_after'])

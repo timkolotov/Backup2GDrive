@@ -3,6 +3,8 @@
   "drive_path": "/Backups/Servers",
   "passphrase": "examplePassPhrase",
   "timezone": "UTC",
+  "run_before": "echo",
+  "run_after": "echo",
   "files": [
   ]
 }
