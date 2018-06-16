@@ -77,15 +77,17 @@ def upload_backup(directory, filename):
         return True
 
 
-def make_backup(files, name, passphrase, tz):
+def make_backup(files, exclude, name, passphrase, tz):
     if os.environ.get('IN_DOCKER', False):
         # make relative path to files and change dir
         files = map(lambda x: '.' + x, files)
         os.chdir('/opt/backup')
 
+    exclude = '' if not exclude else '--exclude ' + ' --exclude '.join(exclude)
+
     # preset commands for making backup
-    cmd = 'tar -c {files} | xz -1 | gpg -c --batch --passphrase {pph}'.format(
-        files=' '.join(files), pph=passphrase)
+    cmd = 'tar {ex} -c {files} | xz -1 | gpg -c --batch --passphrase {pph}'.\
+        format(files=' '.join(files), ex=exclude, pph=passphrase)
 
     name = '{name}-{date}.tar.xz.gpg'.format(
         name=name, date=datetime.now(tz).strftime('%Y%m%d-%H%M'))
@@ -122,7 +124,11 @@ if __name__ == '__main__':
 
     # create backup
     path_to_backup_file = make_backup(
-        config['files'], config['name'], config['passphrase'], timezone)
+        config['files'],
+        config.get('exclude', []),
+        config['name'],
+        config['passphrase'],
+        timezone)
 
     # determine Google Drive directory id for uploading backup file
     directory_id = get_dir_id()

@@ -6,5 +6,7 @@
   "run_before": "echo",
   "run_after": "echo",
   "files": [
+  ],
+  "exclude": [
   ]
 }
