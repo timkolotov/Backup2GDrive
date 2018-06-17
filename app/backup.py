@@ -81,7 +81,8 @@ def make_backup(files, exclude, name, passphrase, tz):
     if os.environ.get('IN_DOCKER', False):
         # make relative path to files and change dir
         files = map(lambda x: '.' + x, files)
-        exclude = map(lambda x: '.' + x, exclude)
+        # add dot only if it is absolute path
+        exclude = map(lambda x: ('.' + x) if x[0] == "/" else x, exclude)
         os.chdir('/opt/backup')
 
     exclude = '' if not exclude else '--exclude ' + ' --exclude '.join(exclude)
