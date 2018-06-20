@@ -19,7 +19,14 @@ def setup_api():
     if not creds or creds.invalid:
         flow = client.flow_from_clientsecrets('./conf.d/client_id.json', scopes)
         creds = tools.run_flow(flow, store)
+
+    print_log('GDrive API client has been configured')
     return discovery.build('drive', 'v3', http=creds.authorize(Http()))
+
+
+def print_log(msg):
+    print('[{time}] {msg}'.format(
+        time=datetime.now(timezone).strftime('%Y-%m-%d %H:%M:%S'), msg=msg))
 
 
 def create_dir(dir_name, parent_id=None):
@@ -66,14 +73,18 @@ def get_dir_id(parent=None):
 def upload_backup(directory, filename):
     """ Upload backup file to GDrive """
 
+    print_log('Uploading backup file is started')
+
     metadata = {'name': filename.split('/').pop(), 'parents': [directory]}
     file_body = http.MediaFileUpload(filename, 'application/octet-stream',
                                      chunksize=1024*1024*2, resumable=True)
     try:
         SERVICE.files().create(body=metadata, media_body=file_body).execute()
     except http.HttpError:
+        print_log('Uploading backup file is failed')
         return False
     else:
+        print_log('Uploading backup file is finished successfully')
         return True
 
 
@@ -98,19 +109,25 @@ def make_backup(files, exclude, name, passphrase, tz, **kwargs):
 
     # if compression enabled - add command and extension
     if kwargs.get('compression'):
+        print_log('Making backup with compression is started.')
         commands.insert(1, 'xz -%s' % str(kwargs.get('compression')))
         extensions.insert(1, 'xz')
+    else:
+        print_log('Making backup without compression is started.')
 
     name = '{name}-{date}.{extensions}'.format(
         name=name,
         date=datetime.now(tz).strftime('%Y%m%d-%H%M'),
         extensions='.'.join(extensions))
+
+    print_log('Name of file {filename}'.format(filename=name))
     with open('/tmp/' + name, 'wb') as backup_file:
         exit_error = call(' | '.join(commands), shell=True, stdout=backup_file)
 
     if os.environ.get('IN_DOCKER', False):
         # return to opt directory
         os.chdir('/opt')
+    print_log('Backup file is created')
 
     return backup_file.name if not exit_error else False
 
@@ -125,16 +142,17 @@ if __name__ == '__main__':
     with open('./conf.d/config.json', 'r') as config_file:
         config = json.load(config_file)
 
-    # must be global
-    DRIVE_DIRS = config['drive_path'].split('/')[1:]
-    SERVICE = setup_api()
-
     try:
         timezone = pytz.timezone(config.pop('timezone'))
     except KeyError:
         timezone = None
 
+    # must be global
+    DRIVE_DIRS = config['drive_path'].split('/')[1:]
+    SERVICE = setup_api()
+
     if 'run_before' in config:
+        print_log('Execution \'run_before\' command is started')
         exec_command(config['run_before'])
 
     # create backup
@@ -149,4 +167,5 @@ if __name__ == '__main__':
         os.unlink(path_to_backup_file)
 
     if 'run_after' in config:
+        print_log('Execution \'run_after\' command is started')
         exec_command(config['run_after'])
