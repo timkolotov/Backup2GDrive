@@ -77,7 +77,7 @@ def upload_backup(directory, filename):
         return True
 
 
-def make_backup(files, exclude, name, passphrase, tz):
+def make_backup(files, exclude, name, passphrase, tz, **kwargs):
     if os.environ.get('IN_DOCKER', False):
         # make relative path to files and change dir
         files = map(lambda x: '.' + x, files)
@@ -88,15 +88,28 @@ def make_backup(files, exclude, name, passphrase, tz):
     exclude = '' if not exclude else '--exclude ' + ' --exclude '.join(exclude)
 
     # preset commands for making backup
-    cmd = 'tar {ex} -c {files} | xz -1 | gpg -c --batch --passphrase {pph}'.\
-        format(files=' '.join(files), ex=exclude, pph=passphrase)
+    commands = [
+        'tar {ex} -c {files}'.format(files=' '.join(files), ex=exclude),
+        'gpg -c --batch --passphrase %s' % passphrase
+    ]
 
-    name = '{name}-{date}.tar.xz.gpg'.format(
-        name=name, date=datetime.now(tz).strftime('%Y%m%d-%H%M'))
+    # preset file extensions
+    extensions = ['tar', 'gpg']
+
+    # if compression enabled - add command and extension
+    if kwargs.get('compression'):
+        commands.insert(1, 'xz -%s' % str(kwargs.get('compression')))
+        extensions.insert(1, 'xz')
+
+    name = '{name}-{date}.{extensions}'.format(
+        name=name,
+        date=datetime.now(tz).strftime('%Y%m%d-%H%M'),
+        extensions='.'.join(extensions))
     with open('/tmp/' + name, 'wb') as backup_file:
-        exit_error = call(cmd, shell=True, stdout=backup_file)
+        exit_error = call(' | '.join(commands), shell=True, stdout=backup_file)
 
     if os.environ.get('IN_DOCKER', False):
+        # return to opt directory
         os.chdir('/opt')
 
     return backup_file.name if not exit_error else False
@@ -117,7 +130,7 @@ if __name__ == '__main__':
     SERVICE = setup_api()
 
     try:
-        timezone = pytz.timezone(config['timezone'])
+        timezone = pytz.timezone(config.pop('timezone'))
     except KeyError:
         timezone = None
 
@@ -125,12 +138,7 @@ if __name__ == '__main__':
         exec_command(config['run_before'])
 
     # create backup
-    path_to_backup_file = make_backup(
-        config['files'],
-        config.get('exclude', []),
-        config['name'],
-        config['passphrase'],
-        timezone)
+    path_to_backup_file = make_backup(tz=timezone, **config)
 
     # determine Google Drive directory id for uploading backup file
     directory_id = get_dir_id()

@@ -5,6 +5,7 @@
   "timezone": "UTC",
   "run_before": "echo",
   "run_after": "echo",
+  "compression": 1,
   "files": [
   ],
   "exclude": [
