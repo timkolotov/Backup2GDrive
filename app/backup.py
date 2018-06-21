@@ -91,9 +91,9 @@ def upload_backup(directory, filename):
 def make_backup(files, exclude, name, passphrase, tz, **kwargs):
     if os.environ.get('IN_DOCKER', False):
         # make relative path to files and change dir
-        files = map(lambda x: '.' + x, files)
+        files = list(map(lambda x: '.' + x, files))
         # add dot only if it is absolute path
-        exclude = map(lambda x: ('.' + x) if x[0] == "/" else x, exclude)
+        exclude = list(map(lambda x: ('.' + x) if x[0] == "/" else x, exclude))
         os.chdir('/opt/backup')
 
     exclude = '' if not exclude else '--exclude ' + ' --exclude '.join(exclude)
