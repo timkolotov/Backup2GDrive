@@ -2,7 +2,6 @@ import os
 import time
 import json
 import pytz
-from datetime import datetime
 from subprocess import call
 
 from apiclient import discovery, http
@@ -25,8 +24,8 @@ def setup_api():
 
 
 def print_log(msg):
-    print('[{time}] {msg}'.format(
-        time=datetime.now(timezone).strftime('%Y-%m-%d %H:%M:%S'), msg=msg))
+    data = dict(time=time.strftime('%Y-%m-%d %H:%M:%S'), msg=msg)
+    print('[{time}] {msg}'.format(**data))
 
 
 def create_dir(dir_name, parent_id=None):
@@ -88,7 +87,7 @@ def upload_backup(directory, filename):
         return True
 
 
-def make_backup(files, exclude, name, passphrase, tz, **kwargs):
+def make_backup(files, exclude, name, passphrase, **kwargs):
     if os.environ.get('IN_DOCKER', False):
         # make relative path to files and change dir
         files = list(map(lambda x: '.' + x, files))
@@ -117,7 +116,7 @@ def make_backup(files, exclude, name, passphrase, tz, **kwargs):
 
     name = '{name}-{date}.{extensions}'.format(
         name=name,
-        date=datetime.now(tz).strftime('%Y%m%d-%H%M'),
+        date=time.strftime('%Y%m%d-%H%M'),
         extensions='.'.join(extensions))
 
     print_log('Name of file {filename}'.format(filename=name))
@@ -142,10 +141,9 @@ if __name__ == '__main__':
     with open('./conf.d/config.json', 'r') as config_file:
         config = json.load(config_file)
 
-    try:
-        timezone = pytz.timezone(config.pop('timezone'))
-    except KeyError:
-        timezone = None
+    # configure time zone
+    os.environ['TZ'] = config.pop('timezone', '')
+    time.tzset()
 
     # must be global
     DRIVE_DIRS = config['drive_path'].split('/')[1:]
@@ -156,7 +154,7 @@ if __name__ == '__main__':
         exec_command(config['run_before'])
 
     # create backup
-    path_to_backup_file = make_backup(tz=timezone, **config)
+    path_to_backup_file = make_backup(**config)
 
     # determine Google Drive directory id for uploading backup file
     directory_id = get_dir_id()
