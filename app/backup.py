@@ -7,6 +7,7 @@ from subprocess import call
 from apiclient import discovery, http
 from httplib2 import Http
 from oauth2client import file, client, tools
+from utils import print_log
 
 
 def setup_api():
@@ -21,11 +22,6 @@ def setup_api():
 
     print_log('GDrive API client has been configured')
     return discovery.build('drive', 'v3', http=creds.authorize(Http()))
-
-
-def print_log(msg):
-    data = dict(time=time.strftime('%Y-%m-%d %H:%M:%S'), msg=msg)
-    print('[{time}] {msg}'.format(**data))
 
 
 def create_dir(dir_name, parent_id=None):
