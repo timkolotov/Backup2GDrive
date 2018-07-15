@@ -12,8 +12,8 @@ class ApiClient(object):
     store = file.Storage('./conf.d/credentials.json')
     service = None
 
-    def __init__(self, path):
-        self.drive_dirs = path.split('/')[1:]
+    def __init__(self, drive_path: str):
+        self.drive_dirs = drive_path.split('/')[1:]
 
     def setup(self):
         """ Setup the Drive v3 API """

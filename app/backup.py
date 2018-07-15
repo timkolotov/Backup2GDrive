@@ -65,7 +65,7 @@ if __name__ == '__main__':
     os.environ['TZ'] = config.pop('timezone', '')
     time.tzset()
 
-    ac = ApiClient(path=config['drive_path'])
+    ac = ApiClient(**config['storage'])
     ac.setup()
 
     if 'run_before' in config:
