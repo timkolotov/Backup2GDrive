@@ -6,7 +6,8 @@
   "run_after": "echo",
   "compression": 1,
   "storage": {
-    "drive_path": "/Backups/Servers"
+    "drive_path": "/Backups/Servers",
+    "save_last": 7
   },
   "files": [
   ],

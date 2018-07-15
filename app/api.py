@@ -1,6 +1,6 @@
 import time
 
-from apiclient import discovery, http
+from apiclient import discovery, http, errors
 from httplib2 import Http
 from oauth2client import file, client, tools
 
@@ -13,8 +13,9 @@ class ApiClient(object):
     service = None
     drive_directory: str = None
 
-    def __init__(self, drive_path: str):
+    def __init__(self, drive_path: str, save_last: int = None):
         self.drive_dirs = drive_path.split('/')[1:]
+        self.number_of_save_last = save_last
 
     def setup(self):
         """ Setup the Drive v3 API """
@@ -90,3 +91,22 @@ class ApiClient(object):
         else:
             dir_id = self.create_dir(current_dir, parent)
         return dir_id
+
+    def clean_old_files(self):
+        if not self.number_of_save_last:
+            return
+        query = "'{id}' in parents and trashed = false " \
+                "and mimeType != 'application/vnd.google-apps.folder'"
+        result = self.service.files().list(
+            q=query.format(id=self.drive_directory), orderBy='createdTime desc'
+        ).execute()
+        delete: list = result['files'][self.number_of_save_last:]
+        print_log(f'{len(delete)} old files for delete')
+        while delete:
+            file_ = delete.pop()
+            try:
+                self.service.files().delete(fileId=file_['id']).execute()
+            except errors.HttpError:
+                print_log(f'Error deleting of {file_["name"]}')
+            else:
+                print_log(f'{file_["name"]} deleted')

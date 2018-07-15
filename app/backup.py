@@ -79,6 +79,7 @@ if __name__ == '__main__':
     upload_result = ac.upload_backup(path_to_backup_file)
     if upload_result:
         os.unlink(path_to_backup_file)
+        ac.clean_old_files()
 
     if 'run_after' in config:
         print_log('Execution \'run_after\' command is started')
