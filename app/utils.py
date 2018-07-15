@@ -1,5 +1,6 @@
 import time
-from urllib import parse, request
+
+import requests
 
 
 def print_log(msg):
@@ -17,28 +18,28 @@ class Notify(object):
 
     def send(self, message: str):
         func = getattr(self, self.driver, self.mock)
-        func(parse.quote(f'{message}'))
+        func(message)
 
     def mock(self, message):
         pass
 
     def clickatell(self, msg: str):
+        url = 'https://api.clickatell.com/rest/message'
         data = {
             "text": msg if self.config.get('sender_id') else 'B2GD: ' + msg,
-            "user": self.config['user'],
-            "password": self.config['pass'],
-            "api_id": self.config['api_id'],
-            "to": self.config['subject']
+            "to": [self.config['subject']]
         }
         if self.config.get('sender_id'):
             data.update({"from": self.config['sender_id']})
 
-        params = parse.urlencode(data, safe='/!')
-        url = 'http://api.clickatell.com/http/sendmsg'
-
-        response = request.urlopen(url + '?' + params)
-        response_body = response.read().decode()
-        if not response.status == 200 or response_body[:2] != 'ID':
-            print_log(f'Sending notify error: {response_body}')
+        response = requests.post(url, json=data, headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'bearer {self.config["api_token"]}',
+            'Accept': 'application/json',
+            'X-Version': '1'
+        })
+        if not response.status_code == 200 and not response.status_code == 202:
+            error_description = response.json().get('error').get('description')
+            print_log(f'Sending notify error: {error_description}')
         else:
             print_log(f'Notification to {self.config["subject"]} delivered')

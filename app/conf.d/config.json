@@ -13,9 +13,7 @@
   "notification": {
     "driver": "DRIVER-NAME",
     "config": {
-      "user": "USERNAME",
-      "pass": "PASSWORD",
-      "api_id": "000000",
+      "api_token": "YOUR TOKEN",
       "subject": "PHONE",
       "sender_id": "max 11 chars"
     }
