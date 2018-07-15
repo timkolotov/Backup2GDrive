@@ -7,7 +7,8 @@
   "compression": 1,
   "storage": {
     "drive_path": "/Backups/Servers",
-    "save_last": 7
+    "save_last": 7,
+    "min_space": "5G"
   },
   "files": [
   ],

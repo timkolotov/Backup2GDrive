@@ -13,9 +13,11 @@ class ApiClient(object):
     service = None
     drive_directory: str = None
 
-    def __init__(self, drive_path: str, save_last: int = None):
+    def __init__(self, drive_path: str, save_last: int = None,
+                 min_space: str = None):
         self.drive_dirs = drive_path.split('/')[1:]
         self.number_of_save_last = save_last
+        self.min_space = min_space
 
     def setup(self):
         """ Setup the Drive v3 API """
@@ -41,7 +43,7 @@ class ApiClient(object):
         metadata = dict(
             name=filename.split('/').pop(), parents=[self.drive_directory])
         file_body = http.MediaFileUpload(
-            filename, 'application/octet-stream', chunksize=1024*1024*2,
+            filename, 'application/octet-stream', chunksize=1024 * 1024 * 2,
             resumable=True)
         try:
             self.service.files().create(
@@ -110,3 +112,19 @@ class ApiClient(object):
                 print_log(f'Error deleting of {file_["name"]}')
             else:
                 print_log(f'{file_["name"]} deleted')
+
+    def check_available_space(self) -> bool:
+        """ Check available space on Google Drive """
+        drive_info = self.service.about().get(fields='storageQuota').execute()
+        available = (int(drive_info['storageQuota']['limit']) -
+                     int(drive_info['storageQuota']['usage']))
+        amount = int(self.min_space[:-1])
+        modifier = self.min_space[-1:]
+        if modifier == 'G':
+            amount = amount * 1024 * 1024 * 1024
+        elif modifier == 'M':
+            amount = amount * 1024 * 1024
+        elif modifier == 'K':
+            amount = amount * 1024
+
+        return available >= amount
