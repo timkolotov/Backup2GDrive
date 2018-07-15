@@ -4,7 +4,7 @@ import time
 from subprocess import call
 
 from api import ApiClient
-from utils import print_log
+from utils import print_log, Notify
 
 
 def make_backup(files, exclude, name, passphrase, **kwargs):
@@ -67,6 +67,13 @@ if __name__ == '__main__':
 
     ac = ApiClient(**config['storage'])
     ac.setup()
+
+    notification = Notify(config.pop('notification', None))
+    if not ac.check_available_space():
+        notification.send(
+            f'Not enough space for uploading backup "{config["name"]}"')
+        print_log('CRITICAL: Not enough space for uploading backup')
+        exit()
 
     if 'run_before' in config:
         print_log('Execution \'run_before\' command is started')
