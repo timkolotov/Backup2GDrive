@@ -24,13 +24,13 @@ class Notify(object):
 
     def clickatell(self, msg: str):
         data = {
-            "text": msg if self.config['sender_id'] else 'B2GD: ' + msg,
+            "text": msg if self.config.get('sender_id') else 'B2GD: ' + msg,
             "user": self.config['user'],
             "password": self.config['pass'],
             "api_id": self.config['api_id'],
             "to": self.config['subject']
         }
-        if self.config['sender_id']:
+        if self.config.get('sender_id'):
             data.update({"from": self.config['sender_id']})
 
         params = parse.urlencode(data, safe='/!')
