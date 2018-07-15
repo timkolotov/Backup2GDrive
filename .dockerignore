@@ -1,0 +1,3 @@
+app/conf.d/credentials.json
+app/conf.d/client_id.json
+app/__pycache__
