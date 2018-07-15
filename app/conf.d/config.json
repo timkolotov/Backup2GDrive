@@ -16,7 +16,8 @@
       "user": "USERNAME",
       "pass": "PASSWORD",
       "api_id": "000000",
-      "subject": "PHONE"
+      "subject": "PHONE",
+      "sender_id": "max 11 chars"
     }
   },
   "files": [

@@ -1,8 +1,5 @@
-import re
 import time
-from urllib import parse
-
-import httplib2
+from urllib import parse, request
 
 
 def print_log(msg):
@@ -20,19 +17,28 @@ class Notify(object):
 
     def send(self, message: str):
         func = getattr(self, self.driver, self.mock)
-        func(parse.quote(f'B2GD: {message}'))
+        func(parse.quote(f'{message}'))
 
     def mock(self, message):
         pass
 
-    def clickatell(self, message):
-        url = 'http://api.clickatell.com/http/sendmsg?user={user}&' \
-              'password={pass}&api_id={api_id}&to={subject}&text={msg}'
+    def clickatell(self, msg: str):
+        data = {
+            "text": msg if self.config['sender_id'] else 'B2GD: ' + msg,
+            "user": self.config['user'],
+            "password": self.config['pass'],
+            "api_id": self.config['api_id'],
+            "to": self.config['subject']
+        }
+        if self.config['sender_id']:
+            data.update({"from": self.config['sender_id']})
 
-        h = httplib2.Http()
-        response, content = h.request(url.format(**self.config, msg=message))
-        if not response.status == 200 and content.decode()[:2] == 'ID':
-            error = re.findall(r'<p[^>]*>([^<]+)<br />', content.decode())
-            print_log(f'Sending notify error: {error[0]}')
+        params = parse.urlencode(data, safe='/!')
+        url = 'http://api.clickatell.com/http/sendmsg'
+
+        response = request.urlopen(url + '?' + params)
+        response_body = response.read().decode()
+        if not response.status == 200 or response_body[:2] != 'ID':
+            print_log(f'Sending notify error: {response_body}')
         else:
             print_log(f'Notification to {self.config["subject"]} delivered')
