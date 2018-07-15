@@ -11,6 +11,7 @@ class ApiClient(object):
     scopes = 'https://www.googleapis.com/auth/drive'
     store = file.Storage('./conf.d/credentials.json')
     service = None
+    drive_directory: str = None
 
     def __init__(self, drive_path: str):
         self.drive_dirs = drive_path.split('/')[1:]
@@ -28,15 +29,16 @@ class ApiClient(object):
             'drive', 'v3', http=creds.authorize(Http()))
         print_log('GDrive API client has been configured')
 
+        # determine Google Drive directory id for uploading backup file
+        self.drive_directory = self.get_dir_id()
+
     def upload_backup(self, filename):
         """ Upload backup file to GDrive """
 
-        # determine Google Drive directory id for uploading backup file
-        directory = self.get_dir_id()
-
         print_log('Uploading backup file is started')
 
-        metadata = {'name': filename.split('/').pop(), 'parents': [directory]}
+        metadata = dict(
+            name=filename.split('/').pop(), parents=[self.drive_directory])
         file_body = http.MediaFileUpload(
             filename, 'application/octet-stream', chunksize=1024*1024*2,
             resumable=True)
